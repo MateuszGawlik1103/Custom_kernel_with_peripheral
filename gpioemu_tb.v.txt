@@ -1,0 +1,117 @@
+`timescale 1ns/100ps
+
+module gpioemu_tb;
+
+   
+    // Deklaracja sygnalow
+    reg clk = 1;
+    reg start;
+    reg [9:0] A;
+    wire [31:0] W;
+    wire [2:0] S;
+    reg [12:0] divisor;
+    reg [12:0] number;
+    reg [9:0] counter;
+
+    reg         n_reset;
+    reg [15:0]  saddress;
+    reg         srd;
+    reg         swr;
+    reg [31:0]  sdata_in;
+    reg [31:0]  gpio_in;
+    reg         gpio_latch;
+    wire [31:0] gpio_out;
+    wire [31:0] sdata_out;
+    wire [31:0] gpio_in_s_insp;   
+    reg [3:0] prime_found;
+
+    
+    // Instancja testowanego modulu
+    
+    initial begin
+    		$dumpfile("gpioemu.vcd");
+    		$dumpvars(0, gpioemu_tb);
+    end
+
+    initial begin
+ 		forever begin
+    		# 5 clk = ~clk;
+    		end
+    end
+
+    
+
+    // Inicjalizacja testu
+    initial begin
+        //Test 1
+        // Test swr
+        #5 n_reset = 1;
+        #5 n_reset = 0;
+
+        // Zapis pod zły adres
+        #5 saddress = 16'h0ff;
+        #5 sdata_in = 2;
+        #5 swr = 1;
+        #5 swr = 0;
+        #400 saddress = 16'h0fc;
+        #5 srd = 1;
+        #5 srd = 0;
+        // Zapis pod dobry adres tej samej liczby
+        #5 saddress = 16'h0ec;
+        #5 sdata_in = 1;
+        #5 swr = 1;
+        #5 swr = 0;
+        #400 saddress = 16'h0fc;
+        #5 srd = 1;
+        #5 srd = 0;
+        // Zapis pod dobry adres
+        #5 saddress = 16'h0ec;
+        #5 sdata_in = 1000;
+        #5 swr = 1;
+        #5 swr = 0;
+
+        // Odczyt statusu ze zlego adresu
+        #50 saddress = 16'h105;
+        #5 srd = 1;
+        #5 srd = 0;
+        // Odczyt wyniku
+        #1600000 
+        saddress = 16'h0fc;
+        #5 srd = 1;
+        #5 srd = 0;
+        #100
+
+        //Test 2
+        // Test swr
+        
+        #5 saddress = 16'h0ec;
+        #5 sdata_in = 250;
+        #5 swr = 1;
+        #5 swr = 0;
+        // Odczyt statusu
+        #50 saddress = 16'h104;
+        #5 srd = 1;
+        #5 srd = 0;
+        // Odczyt wyniku
+        #150000 
+        saddress = 16'h0fc;
+        #5 srd = 1;
+        #5 srd = 0;
+
+        $finish;
+    end
+gpioemu uut (
+        n_reset,                 
+    saddress, srd, swr, 
+    sdata_in, sdata_out, 
+    gpio_in, gpio_latch,          
+    gpio_out,                     
+    clk,                                
+    gpio_in_s_insp
+    );
+
+initial begin
+		$monitor("At %t, sdata_in =%h, sdata_out = %h, saddress = %h", $time, sdata_in, sdata_out, saddress);
+	end
+
+endmodule
